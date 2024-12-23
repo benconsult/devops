@@ -1,14 +1,29 @@
-version: '3'
+version: '3.8'
 services:
-  web:
-    build: .
-    volumes:
-      - .:/myapp
-    ports:
-      - "3000:3000"
-    links:
-      - db
-  db:
-    image: mysql:5.7
+  mysqldb:
+    image: mysql
+    restart: always
+    env_file: ./.env
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD_DEVELOPMENT
+      - MYSQL_DATABASE=$DB_NAME_DEVELOPMENT
+    ports:
+      - $DB_LOCAL_PORT:$DB_DOCKER_PORT
+    volumes:
+      - db-config:/etc/mysql
+      - db-data:/var/lib/mysql
+      - ./db/backup/files/:/data_backup/data
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: app
+    depends_on:
+      - mysqldb
+    stdin_open: true
+    ports:
+      - 3000:3000
+    tty: true
+volumes: 
+  db-config:
+  db-data:
